@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar h1 {
+            margin: 0;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        .admin-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .admin-card h2 {
+            color: #e74c3c;
+            margin: 0 0 1rem 0;
+        }
+        .admin-card p {
+            color: #666;
+            margin: 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #e74c3c;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-right: 1rem;
+            margin-top: 1rem;
+        }
+        .button:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div>
+            <h1>Admin Dashboard</h1>
+        </div>
+        <div>
+            <span sec:authentication="name"></span>
+            <a th:href="@{/logout}">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="admin-card">
+            <h2>Administrator Panel</h2>
+            <p>Welcome to the admin dashboard. Here you can manage users, accounts, and view system statistics.</p>
+            <a th:href="@{/admin/users}" class="button">Manage Users</a>
+        </div>
+    </div>
+</body>
+</html>
+
