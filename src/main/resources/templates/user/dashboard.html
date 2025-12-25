@@ -1,88 +1,160 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .navbar h1 {
-            margin: 0;
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            margin-left: 1rem;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-        .welcome-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        .welcome-card h2 {
-            color: #333;
-            margin: 0 0 1rem 0;
-        }
-        .welcome-card p {
-            color: #666;
-            margin: 0;
-        }
-        .button {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-right: 1rem;
-            margin-top: 1rem;
-        }
-        .button:hover {
-            background: #5568d3;
-        }
-    </style>
+    <title>Дашборд - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <nav class="navbar">
-        <div>
-            <h1>Bank Dashboard</h1>
-        </div>
-        <div>
-            <a th:href="@{/user/accounts}">My Accounts</a>
-            <a th:href="@{/user/transactions}">Transactions</a>
-            <span sec:authentication="name"></span>
-            <a th:href="@{/logout}">Logout</a>
-        </div>
-    </nav>
-    
     <div class="container">
-        <div class="welcome-card">
-            <h2>Welcome, <span th:text="${username}">User</span>!</h2>
-            <p>This is your personal dashboard. Here you can manage your accounts and view your transactions.</p>
-            <a th:href="@{/user/accounts}" class="button">View Accounts</a>
-            <a th:href="@{/user/transactions}" class="button">View Transactions</a>
-        </div>
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link active">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Мой дашборд</span>
+            </div>
+            
+            <!-- Быстрые действия -->
+            <div class="quick-actions">
+                <div class="quick-action" onclick="window.location.href='/api/transfers/page'">
+                    <div class="quick-action-icon">💸</div>
+                    <div class="quick-action-label">Перевести</div>
+                </div>
+                <div class="quick-action" onclick="window.location.href='/api/payments/page'">
+                    <div class="quick-action-icon">💳</div>
+                    <div class="quick-action-label">Оплатить</div>
+                </div>
+                <div class="quick-action" onclick="window.location.href='/api/cards/page'">
+                    <div class="quick-action-icon">🆕</div>
+                    <div class="quick-action-label">Новая карта</div>
+                </div>
+                <div class="quick-action" onclick="window.location.href='/api/deposits/page'">
+                    <div class="quick-action-icon">💰</div>
+                    <div class="quick-action-label">Вклад</div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(totalBalance, 0, 2)} + ' RUB'">0 RUB</h3>
+                    <p>Общий баланс</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${accountsCount}">0</h3>
+                    <p>Активных счетов</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${cardsCount}">0</h3>
+                    <p>Карт</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${transfersCount}">0</h3>
+                    <p>Операций</p>
+                </div>
+            </div>
+
+            <!-- Карты -->
+            <div th:if="${cards != null && !cards.isEmpty()}" style="margin-bottom: 32px;">
+                <h2 style="margin-bottom: 20px; font-size: 24px; font-weight: 700;">Мои карты</h2>
+                <div class="cards-grid">
+                    <div class="bank-card swipeable-card" 
+                         th:each="card : ${cards}"
+                         th:classappend="${card.cardType.name() != 'CREDIT'} ? 'yellow' : ''">
+                        <div class="bank-card-header">
+                            <div class="bank-card-chip"></div>
+                            <span class="badge" 
+                                  th:classappend="${card.status.name() == 'ACTIVE'} ? 'badge-success' : 'badge-danger'"
+                                  th:text="${card.status.name() == 'ACTIVE'} ? 'Активна' : 'Заблокирована'">
+                            </span>
+                        </div>
+                        <div class="bank-card-number" th:text="${#strings.replace(#strings.substring(card.cardNumber, 0, 4) + ' ' + #strings.substring(card.cardNumber, 4, 8) + ' ' + #strings.substring(card.cardNumber, 8, 12) + ' ' + #strings.substring(card.cardNumber, 12), ' ', ' ')}">**** **** **** ****</div>
+                        <div class="bank-card-info">
+                            <div>
+                                <div class="bank-card-holder">Держатель карты</div>
+                                <div class="bank-card-name" th:text="${card.cardholderName != null ? card.cardholderName : 'ВЛАДЕЛЕЦ КАРТЫ'}"></div>
+                            </div>
+                            <div class="bank-card-expiry">
+                                <div class="bank-card-expiry-label">Действует до</div>
+                                <div class="bank-card-expiry-date" th:text="${card.expiryDate != null ? #temporals.format(card.expiryDate, 'MM/yy') : 'ММ/ГГ'}"></div>
+                            </div>
+                        </div>
+                        <div class="bank-card-balance">
+                            <span th:text="${#numbers.formatDecimal(card.balance, 0, 2)}"></span>
+                            <span class="bank-card-currency" th:text="${card.currency}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Последние операции -->
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Последние операции</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Сумма</th>
+                            <th>Описание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${recentTransfers == null || recentTransfers.isEmpty()}">
+                            <td colspan="4" class="empty-state">
+                                <h3>Нет операций</h3>
+                                <p>Ваши транзакции появятся здесь</p>
+                            </td>
+                        </tr>
+                        <tr th:each="transfer : ${recentTransfers}">
+                            <td th:text="${#temporals.format(transfer.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${transfer.transferType.name() == 'SELF' && transfer.toAccount != null && transfer.toAccount.user.id == userId} ? 'badge-info' : 'badge-danger'"
+                                      th:text="${transferTypeNames.get(transfer.transferType)}">
+                                </span>
+                            </td>
+                            <td th:with="isSelf=${transfer.transferType.name() == 'SELF' && transfer.toAccount != null && transfer.toAccount.user.id == userId}"
+                                th:with="amountFormatted=${#numbers.formatDecimal(transfer.amount.abs(), 0, 2)}"
+                                th:with="sign=${isSelf ? '±' : '-'}"
+                                th:with="amountText=${sign + amountFormatted + ' ' + transfer.currency}">
+                                <strong th:style="${isSelf} ? 'color: var(--tbank-blue); font-weight: 600;' : 'color: var(--tbank-red); font-weight: 600;'"
+                                        th:text="${amountText}">
+                                </strong>
+                            </td>
+                            <td th:text="${transfer.description != null ? transfer.description : 'Без описания'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
     </div>
+    <!-- Flash Messages Container -->
+    <div th:if="${success}" data-success th:data-success="${success}" style="display: none;"></div>
+    <div th:if="${error}" data-error th:data-error="${error}" style="display: none;"></div>
+    
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+    <script th:src="@{/js/swipe.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
 </body>
 </html>
-

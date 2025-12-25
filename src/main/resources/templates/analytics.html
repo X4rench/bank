@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналитика - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link active">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Финансовая аналитика</span>
+            </div>
+
+            <!-- Фильтры периода -->
+            <form method="get" action="/api/analytics/page" class="filter-section">
+                <div class="form-group">
+                    <label>Начало периода</label>
+                    <input type="date" name="startDate" th:value="${startDate}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Конец периода</label>
+                    <input type="date" name="endDate" th:value="${endDate}" class="form-control">
+                </div>
+                <button type="submit" class="btn" style="min-width: 140px;">Обновить</button>
+                <button type="button" class="btn btn-secondary" onclick="exportToCSV()" style="min-width: 140px;">Экспорт CSV</button>
+            </form>
+
+            <!-- Статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(totalIncome, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Общий доход</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(totalExpenses, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Общие расходы</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(balance, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Баланс</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(savingsRate, 1, 'COMMA', 1, 'POINT')} + '%'">0%</h3>
+                    <p>Норма сбережений</p>
+                </div>
+            </div>
+
+            <!-- Графики -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                <div class="table-container" style="padding: 24px;">
+                    <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Доходы и расходы</h3>
+                    <canvas id="incomeExpenseChart"></canvas>
+                </div>
+                <div class="table-container" style="padding: 24px;">
+                    <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Расходы по категориям</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Таблица расходов по категориям -->
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Расходы по категориям</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Категория</th>
+                            <th>Сумма</th>
+                            <th>Процент</th>
+                            <th>Прогноз</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${expensesByCategory == null || expensesByCategory.isEmpty()}">
+                            <td colspan="4" class="empty-state">
+                                <h3>Нет данных</h3>
+                            </td>
+                        </tr>
+                        <tr th:each="entry : ${expensesByCategory}">
+                            <td>
+                                <strong th:text="${categoryNames != null ? categoryNames.get(entry.key) : entry.key.name()}"></strong>
+                            </td>
+                            <td><strong th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', 2, 'POINT')} + ' RUB'"></strong></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="flex: 1; height: 8px; background: var(--tbank-dark-surface); border-radius: 4px; overflow: hidden;">
+                                        <div class="progress-bar" 
+                                             th:style="'width: ' + ${percentages.get(entry.key.name())} + '%;'"
+                                             th:text="${percentages.get(entry.key.name())} + '%'">
+                                        </div>
+                                    </div>
+                                    <span th:text="${percentages.get(entry.key.name())} + '%'"></span>
+                                </div>
+                            </td>
+                            <td th:text="${#numbers.formatDecimal(forecasts.get(entry.key.name()), 0, 'COMMA', 2, 'POINT')} + ' RUB/год'"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // График доходов/расходов
+            const incomeExpenseCtx = document.getElementById('incomeExpenseChart').getContext('2d');
+            const totalIncome = /*[[${totalIncome}]]*/ 0;
+            const totalExpenses = /*[[${totalExpenses}]]*/ 0;
+            
+            new Chart(incomeExpenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Доходы', 'Расходы'],
+                    datasets: [{
+                        label: 'Сумма',
+                        data: [totalIncome.doubleValue(), totalExpenses.doubleValue()],
+                        backgroundColor: ['rgba(52, 199, 89, 0.8)', 'rgba(255, 59, 48, 0.8)'],
+                        borderColor: ['rgba(52, 199, 89, 1)', 'rgba(255, 59, 48, 1)'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            callbacks: {
+                                label: function(context) {
+                                    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(context.parsed.y) + ' RUB';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+
+            // Круговая диаграмма по категориям
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            const expensesData = /*[[${expensesByCategory}]]*/ {};
+            
+            const labels = Object.keys(expensesData).map(key => {
+                const names = {
+                    'UTILITIES': 'Коммунальные',
+                    'MOBILE': 'Мобильная связь',
+                    'INTERNET': 'Интернет',
+                    'TV': 'Телевидение',
+                    'TAXES': 'Налоги',
+                    'FOOD': 'Еда',
+                    'TRANSPORT': 'Транспорт',
+                    'ENTERTAINMENT': 'Развлечения',
+                    'HEALTH': 'Здоровье',
+                    'EDUCATION': 'Образование',
+                    'SHOPPING': 'Покупки',
+                    'OTHER': 'Прочее'
+                };
+                return names[key] || key;
+            });
+            
+            const amounts = Object.values(expensesData).map(v => v.doubleValue());
+            const colors = ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)', 'rgba(199, 199, 199, 0.8)', 'rgba(83, 102, 255, 0.8)'];
+            
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: amounts,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'rgba(255, 255, 255, 0.9)' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(context.parsed) + ' RUB';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        function exportToCSV() {
+            const startDate = document.querySelector('input[name="startDate"]').value;
+            const endDate = document.querySelector('input[name="endDate"]').value;
+            window.location.href = '/api/analytics/export?startDate=' + startDate + '&endDate=' + endDate;
+        }
+    </script>
+</body>
+</html>

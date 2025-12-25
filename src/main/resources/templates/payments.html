@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Платежи - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link active">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Платежи и счета</span>
+                <button class="btn" onclick="openModal('createBillModal')">+ Создать счет</button>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Мои счета</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Провайдер</th>
+                            <th>Категория</th>
+                            <th>Номер счета</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${bills == null || bills.isEmpty()}">
+                            <td colspan="6" class="empty-state">
+                                <h3>Нет счетов</h3>
+                                <p>Создайте новый счет для оплаты</p>
+                            </td>
+                        </tr>
+                        <tr th:each="bill : ${bills}">
+                            <td><strong th:text="${bill.providerName}"></strong></td>
+                            <td>
+                                <span class="badge badge-info">
+                                    <span th:switch="${bill.category.name()}">
+                                        <span th:case="'UTILITIES'">Коммунальные</span>
+                                        <span th:case="'FOOD'">Еда</span>
+                                        <span th:case="'TRANSPORT'">Транспорт</span>
+                                        <span th:case="'ENTERTAINMENT'">Развлечения</span>
+                                        <span th:case="'SHOPPING'">Покупки</span>
+                                        <span th:case="'HEALTH'">Здоровье</span>
+                                        <span th:case="'EDUCATION'">Образование</span>
+                                        <span th:case="'BILLS'">Счета</span>
+                                        <span th:case="'TRANSFER'">Переводы</span>
+                                        <span th:case="*">Прочее</span>
+                                    </span>
+                                </span>
+                            </td>
+                            <td th:text="${bill.accountNumber != null ? bill.accountNumber : '-'}"></td>
+                            <td><strong style="font-size: 16px; color: var(--tbank-red);" th:text="${#numbers.formatDecimal(bill.amount, 0, 2)} + ' ' + ${bill.account != null ? bill.account.currency : 'RUB'}"></strong></td>
+                            <td>
+                                <span class="badge" th:switch="${bill.status.name()}">
+                                    <span th:case="'COMPLETED'" class="badge-success">Оплачен</span>
+                                    <span th:case="'PENDING'" class="badge-warning">Ожидает оплаты</span>
+                                    <span th:case="'FAILED'" class="badge-danger">Не удалось</span>
+                                    <span th:case="'CANCELLED'" class="badge-secondary">Отменен</span>
+                                    <span th:case="*" class="badge-secondary">-</span>
+                                </span>
+                            </td>
+                            <td>
+                                <form th:if="${bill.status.name() != 'COMPLETED'}" method="post" th:action="@{'/api/payments/bills/' + ${bill.id} + '/pay'}" style="display: inline;">
+                                    <button type="submit" class="btn btn-small btn-success">Оплатить</button>
+                                </form>
+                                <span th:if="${bill.status.name() == 'COMPLETED'}" style="color: var(--tbank-gray);">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal для создания счета -->
+    <div id="createBillModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать счет для оплаты</h3>
+                <span class="close" onclick="closeModal('createBillModal')">&times;</span>
+            </div>
+            <form method="post" action="/api/payments/bills">
+                <div class="form-group">
+                    <label>Счет для оплаты</label>
+                    <select name="accountId" required class="form-control">
+                        <option value="">Выберите счет</option>
+                        <option th:each="account : ${accounts}" 
+                                th:value="${account.id}" 
+                                th:text="${account.accountNumber} + ' (' + ${account.accountType} + ')'">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Провайдер/Компания</label>
+                    <input type="text" name="providerName" required placeholder="Например: Мосэнергосбыт" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Категория</label>
+                    <select name="category" required class="form-control">
+                        <option th:each="cat : ${categories}" 
+                                th:value="${cat}"
+                                th:text="${categoryNames.get(cat)}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Сумма</label>
+                    <input type="number" name="amount" step="0.01" min="0" required placeholder="0.00" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Номер счета/Лицевой счет</label>
+                    <input type="text" name="accountNumber" placeholder="Необязательно" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Код платежа</label>
+                    <input type="text" name="paymentCode" placeholder="Необязательно" class="form-control">
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1;">Создать счет</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createBillModal')" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Счета - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link active">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Мои счета</span>
+                <button class="btn" onclick="openModal('createAccountModal')">+ Создать счет</button>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(totalBalance, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Общий баланс</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${totalCount}">0</h3>
+                    <p>Всего счетов</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${activeCount}">0</h3>
+                    <p>Активных</p>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 32px;">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Все счета</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Номер счета</th>
+                            <th>Тип</th>
+                            <th>Валюта</th>
+                            <th>Баланс</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${accounts == null || accounts.isEmpty()}">
+                            <td colspan="6" class="empty-state">
+                                <h3>У вас пока нет счетов</h3>
+                                <p>Создайте свой первый счет</p>
+                            </td>
+                        </tr>
+                        <tr th:each="account : ${accounts}">
+                            <td><strong th:text="${account.accountNumber}"></strong></td>
+                            <td><span class="badge badge-info" th:text="${account.accountType}"></span></td>
+                            <td th:text="${account.currency}"></td>
+                            <td><strong style="font-size: 16px;" th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', 2, 'POINT')} + ' ' + ${account.currency}"></strong></td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${account.isActive} ? 'badge-success' : 'badge-secondary'"
+                                      th:text="${account.isActive} ? 'Активен' : 'Неактивен'">
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-small btn-secondary" onclick="viewAccountDetails([[${account.id}]])">Детали</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal для создания счета -->
+    <div id="createAccountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать новый счет</h3>
+                <span class="close" onclick="closeModal('createAccountModal')">&times;</span>
+            </div>
+            <form method="post" action="/api/accounts">
+                <div class="form-group">
+                    <label>Тип счета</label>
+                    <select name="accountType" required class="form-control">
+                        <option value="CURRENT">Текущий</option>
+                        <option value="SAVINGS">Сберегательный</option>
+                        <option value="DEPOSIT">Депозитный</option>
+                        <option value="INVESTMENT">Инвестиционный</option>
+                        <option value="BUSINESS">Бизнес</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Валюта</label>
+                    <select name="currency" required class="form-control">
+                        <option value="RUB">RUB - Российский рубль</option>
+                        <option value="USD">USD - Доллар США</option>
+                        <option value="EUR">EUR - Евро</option>
+                        <option value="GBP">GBP - Фунт стерлингов</option>
+                        <option value="CNY">CNY - Китайский юань</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Начальный баланс</label>
+                    <input type="number" name="initialBalance" step="0.01" min="0" value="0" placeholder="0.00" class="form-control">
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1;">Создать счет</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createAccountModal')" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

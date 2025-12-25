@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карты - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link active">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Мои карты</span>
+                <button class="btn" onclick="openModal('createCardModal')">+ Выпустить карту</button>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <!-- Визуальные карты -->
+            <div class="cards-grid" th:if="${cards != null && !cards.isEmpty()}">
+                <div class="bank-card" 
+                     th:each="card : ${cards}"
+                     th:classappend="${card.cardType.name() != 'CREDIT'} ? 'yellow' : ''">
+                    <div class="bank-card-header">
+                        <div class="bank-card-chip"></div>
+                        <span class="badge" th:switch="${card.status.name()}">
+                            <span th:case="'ACTIVE'" class="badge-success">Активна</span>
+                            <span th:case="'BLOCKED'" class="badge-danger">Заблокирована</span>
+                            <span th:case="'EXPIRED'" class="badge-warning">Истекла</span>
+                            <span th:case="'PENDING'" class="badge-warning">В обработке</span>
+                            <span th:case="'CANCELLED'" class="badge-secondary">Аннулирована</span>
+                            <span th:case="*" class="badge-secondary">-</span>
+                        </span>
+                    </div>
+                    <div class="bank-card-number" th:text="${#strings.substring(card.cardNumber, 0, 4)} + ' ' + ${#strings.substring(card.cardNumber, 4, 8)} + ' ' + ${#strings.substring(card.cardNumber, 8, 12)} + ' ' + ${#strings.substring(card.cardNumber, 12)}">**** **** **** ****</div>
+                    <div class="bank-card-info">
+                        <div>
+                            <div class="bank-card-holder">Держатель карты</div>
+                            <div class="bank-card-name" th:text="${card.cardholderName != null ? card.cardholderName : 'ВЛАДЕЛЕЦ КАРТЫ'}"></div>
+                        </div>
+                        <div class="bank-card-expiry">
+                            <div class="bank-card-expiry-label">Действует до</div>
+                            <div class="bank-card-expiry-date" th:text="${card.expiryDate != null ? #temporals.format(card.expiryDate, 'MM/yy') : 'ММ/ГГ'}"></div>
+                        </div>
+                    </div>
+                    <div class="bank-card-balance">
+                        <span th:text="${#numbers.formatDecimal(card.balance, 0, 2)}"></span>
+                        <span class="bank-card-currency" th:text="${card.currency}"></span>
+                    </div>
+                    <div style="margin-top: 16px; font-size: 14px; opacity: 0.7;">
+                        <span th:switch="${card.cardType.name()}">
+                            <span th:case="'DEBIT'">Дебетовая</span>
+                            <span th:case="'CREDIT'">Кредитная</span>
+                            <span th:case="'PREPAID'">Предоплаченная</span>
+                            <span th:case="'VIRTUAL'">Виртуальная</span>
+                            <span th:case="*">-</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${cards == null || cards.isEmpty()}" class="empty-state">
+                <h3>У вас пока нет карт</h3>
+                <p>Выпустите свою первую карту</p>
+            </div>
+
+            <!-- Детальная таблица -->
+            <div class="table-container" style="margin-top: 32px;" th:if="${cards != null && !cards.isEmpty()}">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Все карты</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Номер карты</th>
+                            <th>Держатель</th>
+                            <th>Тип</th>
+                            <th>Валюта</th>
+                            <th>Баланс</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="card : ${cards}">
+                            <td><strong th:with="cardNum=${card.cardNumber}" th:text="${#strings.substring(cardNum, 0, 4)} + ' **** **** ' + ${#strings.substring(cardNum, #strings.length(cardNum) - 4)}"></strong></td>
+                            <td th:text="${card.cardholderName != null ? card.cardholderName : '-'}"></td>
+                            <td>
+                                <span class="badge badge-info" th:switch="${card.cardType.name()}">
+                                    <span th:case="'DEBIT'">Дебетовая</span>
+                                    <span th:case="'CREDIT'">Кредитная</span>
+                                    <span th:case="'PREPAID'">Предоплаченная</span>
+                                    <span th:case="'VIRTUAL'">Виртуальная</span>
+                                    <span th:case="*">-</span>
+                                </span>
+                            </td>
+                            <td th:text="${card.currency}"></td>
+                            <td><strong th:text="${#numbers.formatDecimal(card.balance, 0, 2)} + ' ' + ${card.currency}"></strong></td>
+                            <td>
+                                <span class="badge" th:switch="${card.status.name()}">
+                                    <span th:case="'ACTIVE'" class="badge-success">Активна</span>
+                                    <span th:case="'BLOCKED'" class="badge-danger">Заблокирована</span>
+                                    <span th:case="'EXPIRED'" class="badge-warning">Истекла</span>
+                                    <span th:case="'PENDING'" class="badge-warning">В обработке</span>
+                                    <span th:case="'CANCELLED'" class="badge-secondary">Аннулирована</span>
+                                    <span th:case="*" class="badge-secondary">-</span>
+                                </span>
+                            </td>
+                            <td>
+                                <form th:if="${card.status.name() == 'ACTIVE'}" method="post" th:action="@{'/api/cards/' + ${card.id} + '/block'}" style="display: inline;">
+                                    <button type="submit" class="btn btn-small btn-danger" onclick="return confirm('Заблокировать карту?')">Заблокировать</button>
+                                </form>
+                                <form th:if="${card.status.name() == 'BLOCKED'}" method="post" th:action="@{'/api/cards/' + ${card.id} + '/unblock'}" style="display: inline;">
+                                    <button type="submit" class="btn btn-small btn-success">Разблокировать</button>
+                                </form>
+                                <form method="post" action="/api/cards/virtual" style="display: inline;">
+                                    <input type="hidden" name="cardId" th:value="${card.id}">
+                                    <button type="submit" class="btn btn-small btn-secondary" style="margin-left: 8px;">Виртуальная</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal для создания карты -->
+    <div id="createCardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Выпустить карту</h3>
+                <span class="close" onclick="closeModal('createCardModal')">&times;</span>
+            </div>
+            <form method="post" action="/api/cards">
+                <div class="form-group">
+                    <label>Счет</label>
+                    <select name="accountId" required class="form-control">
+                        <option value="">Выберите счет</option>
+                        <option th:each="account : ${accounts}" 
+                                th:value="${account.id}" 
+                                th:text="${account.accountNumber} + ' (' + ${account.accountType} + ') - ' + ${#numbers.formatDecimal(account.balance, 0, 2)} + ' ' + ${account.currency}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Тип карты</label>
+                    <select name="cardType" required class="form-control">
+                        <option th:each="type : ${cardTypes}" 
+                                th:value="${type}"
+                                th:text="${cardTypeNames.get(type)}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Имя держателя</label>
+                    <input type="text" name="cardholderName" required placeholder="IVAN IVANOV" class="form-control">
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1;">Выпустить карту</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createCardModal')" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+    <script th:src="@{/js/swipe.js}"></script>
+</body>
+</html>

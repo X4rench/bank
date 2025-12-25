@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кредиты - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link active">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Мои кредиты</span>
+                <button class="btn" onclick="openModal('createLoanModal')">+ Оформить кредит</button>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Все кредиты</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Номер кредита</th>
+                            <th>Тип</th>
+                            <th>Сумма</th>
+                            <th>Остаток</th>
+                            <th>Процентная ставка</th>
+                            <th>Ежемесячный платеж</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${loans == null || loans.isEmpty()}">
+                            <td colspan="8" class="empty-state">
+                                <h3>Нет кредитов</h3>
+                                <p>Оформите свой первый кредит</p>
+                            </td>
+                        </tr>
+                        <tr th:each="loan : ${loans}">
+                            <td th:text="${loan.loanNumber != null ? loan.loanNumber : '-'}"></td>
+                            <td>
+                                <span th:switch="${loan.loanType.name()}">
+                                    <span th:case="'CONSUMER'">Потребительский</span>
+                                    <span th:case="'MORTGAGE'">Ипотека</span>
+                                    <span th:case="'AUTO'">Автокредит</span>
+                                    <span th:case="'CREDIT_CARD'">Кредитная карта</span>
+                                    <span th:case="'MICROLOAN'">Микрозайм</span>
+                                    <span th:case="*">-</span>
+                                </span>
+                            </td>
+                            <td><strong th:text="${#numbers.formatDecimal(loan.principalAmount, 0, 2)} + ' ' + ${loan.currency}"></strong></td>
+                            <td><strong th:text="${#numbers.formatDecimal(loan.remainingBalance != null ? loan.remainingBalance : loan.principalAmount, 0, 2)} + ' ' + ${loan.currency}"></strong></td>
+                            <td th:text="${#numbers.formatDecimal(loan.interestRate, 1, 1)} + '%'"></td>
+                            <td><strong th:text="${#numbers.formatDecimal(loan.monthlyPayment != null ? loan.monthlyPayment : 0, 0, 2)} + ' ' + ${loan.currency}"></strong></td>
+                            <td>
+                                <span class="badge" th:switch="${loan.status.name()}">
+                                    <span th:case="'ACTIVE'" class="badge-success">Активен</span>
+                                    <span th:case="'PAID_OFF'" class="badge-info">Погашен</span>
+                                    <span th:case="'OVERDUE'" class="badge-danger">Просрочен</span>
+                                    <span th:case="'APPROVED'" class="badge-warning">Одобрен</span>
+                                    <span th:case="*" class="badge-secondary">-</span>
+                                </span>
+                            </td>
+                            <td>
+                                <form th:if="${loan.status.name() == 'ACTIVE' or loan.status.name() == 'APPROVED'}" 
+                                      method="post" 
+                                      th:action="@{'/api/loans/' + ${loan.id} + '/payment'}" 
+                                      style="display: inline;">
+                                    <input type="hidden" name="amount" th:value="${loan.monthlyPayment != null ? loan.monthlyPayment : loan.principalAmount}">
+                                    <button type="submit" class="btn btn-small">Внести платеж</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal для создания кредита -->
+    <div id="createLoanModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Оформить кредит</h3>
+                <span class="close" onclick="closeModal('createLoanModal')">&times;</span>
+            </div>
+            <form method="post" action="/api/loans">
+                <div class="form-group">
+                    <label>Тип кредита</label>
+                    <select name="loanType" required class="form-control">
+                        <option th:each="type : ${loanTypes}" 
+                                th:value="${type}"
+                                th:text="${loanTypeNames.get(type)}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Сумма кредита</label>
+                    <input type="number" name="principalAmount" step="0.01" min="0" required placeholder="0.00" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Процентная ставка (%)</label>
+                    <input type="number" name="interestRate" step="0.01" min="0" max="100" required placeholder="12.5" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Срок (месяцев)</label>
+                    <input type="number" name="termMonths" min="1" required placeholder="12" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Валюта</label>
+                    <select name="currency" required class="form-control">
+                        <option th:each="curr : ${currencies}" 
+                                th:value="${curr}" 
+                                th:text="${curr}">
+                        </option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1;">Оформить</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createLoanModal')" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

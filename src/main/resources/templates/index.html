@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-BANK - Банковское приложение</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h1>T-BANK</h1>
+                <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto;">
+                    <span id="themeIcon">🌙</span>
+                </button>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link active">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+                <a href="/settings" class="nav-link">⚙️ Настройки</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <div class="welcome-section">
+                <h2>Добро пожаловать в T-BANK</h2>
+                <p>Управляйте своими финансами удобно, быстро и безопасно</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card" onclick="window.location.href='/dashboard'">
+                    <h3>📊 Дашборд</h3>
+                    <p>Обзор всех ваших финансов в одном месте. Следите за балансом, операциями и статистикой</p>
+                    <a href="/dashboard" class="btn">Открыть дашборд</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/accounts/page'">
+                    <h3>💳 Управление счетами</h3>
+                    <p>Просматривайте баланс и историю операций по всем счетам. Создавайте новые счета</p>
+                    <a href="/api/accounts/page" class="btn">Мои счета</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/cards/page'">
+                    <h3>💳 Карты</h3>
+                    <p>Управляйте картами: активация, блокировка, виртуальные карты для онлайн-покупок</p>
+                    <a href="/api/cards/page" class="btn">Мои карты</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/transfers/page'">
+                    <h3>🔄 Переводы</h3>
+                    <p>Переводите деньги между счетами и на карты других банков быстро и безопасно</p>
+                    <a href="/api/transfers/page" class="btn">Переводы</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/payments/page'">
+                    <h3>💸 Платежи</h3>
+                    <p>Оплачивайте счета, коммунальные услуги, мобильную связь и интернет одним кликом</p>
+                    <a href="/api/payments/page" class="btn">Платежи</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/loans/page'">
+                    <h3>📋 Кредиты</h3>
+                    <p>Управляйте кредитами, просматривайте график платежей и остаток задолженности</p>
+                    <a href="/api/loans/page" class="btn">Кредиты</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/deposits/page'">
+                    <h3>💰 Вклады</h3>
+                    <p>Открывайте вклады и отслеживайте начисленные проценты для увеличения накоплений</p>
+                    <a href="/api/deposits/page" class="btn">Вклады</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/budgets/page'">
+                    <h3>📈 Бюджет</h3>
+                    <p>Устанавливайте лимиты по категориям и отслеживайте расходы для контроля финансов</p>
+                    <a href="/api/budgets/page" class="btn">Бюджет</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/analytics/page'">
+                    <h3>📊 Аналитика</h3>
+                    <p>Анализируйте доходы и расходы по категориям. Стройте графики и планируйте бюджет</p>
+                    <a href="/api/analytics/page" class="btn">Аналитика</a>
+                </div>
+
+                <div class="feature-card" onclick="window.location.href='/api/notifications/page'">
+                    <h3>🔔 Уведомления</h3>
+                    <p>Получайте уведомления о транзакциях, платежах и важных изменениях в ваших счетах</p>
+                    <a href="/api/notifications/page" class="btn">Уведомления</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Flash Messages Container -->
+    <div th:if="${success}" data-success th:data-success="${success}" style="display: none;"></div>
+    <div th:if="${error}" data-error th:data-error="${error}" style="display: none;"></div>
+    
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+</body>
+</html>

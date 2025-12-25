@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Уведомления - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link active">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Уведомления 
+                    <span th:if="${unreadCount > 0}" class="badge badge-danger" style="margin-left: 8px;" th:text="${'(' + unreadCount + ')'}"></span>
+                </span>
+                <form th:if="${unreadCount > 0}" method="post" th:action="@{'/api/notifications/user/' + ${2} + '/read-all'}" style="display: inline;">
+                    <button type="submit" class="btn btn-secondary">Отметить все как прочитанные</button>
+                </form>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Все уведомления</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Тип</th>
+                            <th>Заголовок</th>
+                            <th>Сообщение</th>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${notifications == null || notifications.isEmpty()}">
+                            <td colspan="6" class="empty-state">
+                                <h3>Нет уведомлений</h3>
+                            </td>
+                        </tr>
+                        <tr th:each="notification : ${notifications}"
+                            th:class="${!notification.isRead} ? 'unread' : ''"
+                            th:style="${!notification.isRead} ? 'background: rgba(255, 221, 45, 0.1);' : ''">
+                            <td>
+                                <span th:switch="${notification.notificationType.name()}">
+                                    <span th:case="'TRANSACTION'">💳 Транзакция</span>
+                                    <span th:case="'BALANCE_CHANGE'">💰 Изменение баланса</span>
+                                    <span th:case="'PAYMENT_DUE'">💸 Срок оплаты</span>
+                                    <span th:case="'LOAN_REMINDER'">📋 Напоминание о кредите</span>
+                                    <span th:case="'PROMOTION'">🎁 Акция</span>
+                                    <span th:case="'SECURITY'">🔒 Безопасность</span>
+                                    <span th:case="*">📢 Уведомление</span>
+                                </span>
+                            </td>
+                            <td><strong th:text="${notification.title != null ? notification.title : '-'}"></strong></td>
+                            <td th:text="${notification.message != null ? notification.message : '-'}"></td>
+                            <td th:text="${#temporals.format(notification.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${notification.isRead} ? 'badge-success' : 'badge-warning'"
+                                      th:text="${notification.isRead} ? 'Прочитано' : 'Новое'">
+                                </span>
+                            </td>
+                            <td>
+                                <form th:if="${!notification.isRead}" method="post" th:action="@{'/api/notifications/' + ${notification.id} + '/read'}" style="display: inline;">
+                                    <button type="submit" class="btn btn-small">Отметить прочитанным</button>
+                                </form>
+                                <span th:if="${notification.isRead}" style="color: var(--tbank-gray);">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

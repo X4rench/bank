@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бюджет - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link active">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Бюджет</span>
+                <button class="btn" onclick="openModal('createBudgetModal')">+ Создать бюджет</button>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(totalLimit, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Общий лимит</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(totalSpent, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Потрачено</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(remaining, 0, 'COMMA', 2, 'POINT')} + ' RUB'">0 RUB</h3>
+                    <p>Остаток</p>
+                </div>
+                <div class="stat-card">
+                    <h3 th:text="${#numbers.formatDecimal(percentage, 1, 'COMMA', 1, 'POINT')} + '%'">0%</h3>
+                    <p>Использовано</p>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Мои бюджеты</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Категория</th>
+                            <th>Лимит</th>
+                            <th>Потрачено</th>
+                            <th>Остаток</th>
+                            <th>Прогресс</th>
+                            <th>Период</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${budgets == null || budgets.isEmpty()}">
+                            <td colspan="8" class="empty-state">
+                                <h3>Нет бюджетов</h3>
+                                <p>Создайте свой первый бюджет</p>
+                            </td>
+                        </tr>
+                        <tr th:each="budget : ${budgets}">
+                            <td>
+                                <strong>
+                                    <span th:switch="${budget.category.name()}">
+                                        <span th:case="'FOOD'">🍔 Еда</span>
+                                        <span th:case="'TRANSPORT'">🚗 Транспорт</span>
+                                        <span th:case="'ENTERTAINMENT'">🎬 Развлечения</span>
+                                        <span th:case="'UTILITIES'">🏠 Коммунальные</span>
+                                        <span th:case="'SHOPPING'">🛒 Покупки</span>
+                                        <span th:case="'HEALTH'">🏥 Здоровье</span>
+                                        <span th:case="'EDUCATION'">📚 Образование</span>
+                                        <span th:case="*">📦 Прочее</span>
+                                    </span>
+                                </strong>
+                            </td>
+                            <td><strong th:text="${#numbers.formatDecimal(budget.limitAmount, 0, 'COMMA', 2, 'POINT')} + ' RUB'"></strong></td>
+                            <td th:style="${budget.spentAmount.compareTo(budget.limitAmount) > 0} ? 'color: var(--tbank-red);' : ''">
+                                <strong th:text="${#numbers.formatDecimal(budget.spentAmount, 0, 'COMMA', 2, 'POINT')} + ' RUB'"></strong>
+                            </td>
+                            <td th:with="remaining=${budget.limitAmount.subtract(budget.spentAmount)}" 
+                                th:style="${remaining.doubleValue() < 0} ? 'color: var(--tbank-red);' : 'color: var(--tbank-green);'">
+                                <strong th:text="${#numbers.formatDecimal(remaining, 0, 'COMMA', 2, 'POINT')} + ' RUB'"></strong>
+                            </td>
+                            <td>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" 
+                                         th:with="limit=${budget.limitAmount.doubleValue()}, spent=${budget.spentAmount.doubleValue()}, percent=${limit > 0 ? (spent / limit * 100) : 0}, percentValue=${percent > 100 ? 100 : percent}, percentStr=${#numbers.formatDecimal(percentValue, 1, 1)}, isOver=${spent > limit}, isWarning=${percent > 80}"
+                                         th:style="'width: ' + ${percentValue} + '%; background: ' + (${isOver} ? 'var(--tbank-red)' : (${isWarning} ? 'var(--tbank-orange)' : 'linear-gradient(90deg, var(--tbank-yellow), var(--tbank-yellow-dark))')) + ';'">
+                                        <span th:if="${percent > 10}"
+                                              th:text="${percentStr} + '%'">
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:text="${#temporals.format(budget.startDate, 'dd.MM.yyyy')} + ' - ' + ${#temporals.format(budget.endDate, 'dd.MM.yyyy')}"></td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${budget.isActive} ? 'badge-success' : 'badge-secondary'"
+                                      th:text="${budget.isActive} ? 'Активен' : 'Неактивен'">
+                                </span>
+                            </td>
+                            <td>
+                                <form method="post" th:action="@{'/api/budgets/' + ${budget.id} + '/update-spent'}" style="display: inline;">
+                                    <button type="submit" class="btn btn-small btn-secondary">Обновить</button>
+                                </form>
+                                <form method="post" th:action="@{'/api/budgets/' + ${budget.id} + '/delete'}" style="display: inline; margin-left: 8px;">
+                                    <button type="submit" class="btn btn-small btn-danger">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal для создания бюджета -->
+    <div id="createBudgetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать бюджет</h3>
+                <span class="close" onclick="closeModal('createBudgetModal')">&times;</span>
+            </div>
+            <form method="post" action="/api/budgets">
+                <div class="form-group">
+                    <label>Категория</label>
+                    <select name="category" required class="form-control">
+                        <option value="FOOD">🍔 Еда</option>
+                        <option value="TRANSPORT">🚗 Транспорт</option>
+                        <option value="ENTERTAINMENT">🎬 Развлечения</option>
+                        <option value="UTILITIES">🏠 Коммунальные услуги</option>
+                        <option value="SHOPPING">🛒 Покупки</option>
+                        <option value="HEALTH">🏥 Здоровье</option>
+                        <option value="EDUCATION">📚 Образование</option>
+                        <option value="OTHER">📦 Прочее</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Лимит</label>
+                    <input type="number" name="limitAmount" step="0.01" min="0" required placeholder="0.00" class="form-control">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Начало периода</label>
+                        <input type="date" name="startDate" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Конец периода</label>
+                        <input type="date" name="endDate" required class="form-control">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1;">Создать бюджет</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createBudgetModal')" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

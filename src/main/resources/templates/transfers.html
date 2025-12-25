@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Переводы - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link active">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Переводы</span>
+                <button class="btn" onclick="openModal('createTransferModal')">+ Создать перевод</button>
+            </div>
+
+            <!-- Уведомления -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <!-- Поиск и фильтры -->
+            <div class="search-filter-wrapper">
+                <div class="search-filter-header">
+                    <h3>🔍 Поиск и фильтры</h3>
+                </div>
+                <form method="get" action="/api/transfers/page" class="search-filter-container">
+                    <div class="search-input-wrapper">
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon">🔍</span>
+                            <input type="text" name="search" th:value="${search}" placeholder="Поиск по описанию, сумме..." class="form-control search-input">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">📋 Тип</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon">📋</span>
+                            <select name="transferType" class="form-control">
+                                <option value="">Все типы</option>
+                                <option th:each="type : ${transferTypes}" 
+                                        th:value="${type}" 
+                                        th:text="${type}"
+                                        th:selected="${transferType != null && transferType == type}">
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">📅 От</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon">📅</span>
+                            <input type="date" name="startDate" th:value="${startDate}" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">📅 До</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon">📅</span>
+                            <input type="date" name="endDate" th:value="${endDate}" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-search">
+                            <span>🔍</span>
+                            <span>Поиск</span>
+                        </button>
+                        <a href="/api/transfers/page" class="btn btn-secondary btn-reset">
+                            <span>🔄</span>
+                            <span>Сбросить</span>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container" style="margin-top: 24px;">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">История переводов</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th><a href="/api/transfers/page?sortBy=date&sortOrder=${sortOrder == 'desc' ? 'asc' : 'desc'}" style="color: inherit; text-decoration: none;">Дата ⇅</a></th>
+                            <th><a href="/api/transfers/page?sortBy=type&sortOrder=${sortOrder == 'desc' ? 'asc' : 'desc'}" style="color: inherit; text-decoration: none;">Тип ⇅</a></th>
+                            <th>С счета</th>
+                            <th>На счет</th>
+                            <th><a href="/api/transfers/page?sortBy=amount&sortOrder=${sortOrder == 'desc' ? 'asc' : 'desc'}" style="color: inherit; text-decoration: none;">Сумма ⇅</a></th>
+                            <th>Описание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${transfers == null || transfers.isEmpty()}">
+                            <td colspan="6" class="empty-state">
+                                <h3>Нет переводов</h3>
+                                <p>Ваши переводы появятся здесь</p>
+                            </td>
+                        </tr>
+                        <tr th:each="transfer : ${transfers}">
+                            <td th:text="${#temporals.format(transfer.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${transfer.transferType.name() == 'DEPOSIT' or transfer.transferType.name() == 'INCOME'} ? 'badge-success' : 'badge-danger'"
+                                      th:text="${transfer.transferType.name()}">
+                                </span>
+                            </td>
+                            <td th:text="${transfer.fromAccount != null ? transfer.fromAccount.accountNumber : '-'}"></td>
+                            <td th:text="${transfer.toAccount != null ? transfer.toAccount.accountNumber : (transfer.recipientAccount != null ? transfer.recipientAccount : '-')}"></td>
+                            <td th:style="${transfer.transferType.name() == 'DEPOSIT' or transfer.transferType.name() == 'INCOME'} ? 'color: var(--tbank-green); font-weight: 600;' : 'color: var(--tbank-red); font-weight: 600;'"
+                                th:text="${(transfer.transferType.name() == 'DEPOSIT' or transfer.transferType.name() == 'INCOME') ? '+' : '-'} + ${#numbers.formatDecimal(transfer.amount, 0, 'COMMA', 2, 'POINT')} + ' ' + ${transfer.currency}">
+                            </td>
+                            <td th:text="${transfer.description != null ? transfer.description : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal для создания перевода -->
+    <div id="createTransferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать перевод</h3>
+                <span class="close" onclick="closeModal('createTransferModal')">&times;</span>
+            </div>
+            <form method="post" action="/api/transfers">
+                <div class="form-group">
+                    <label>Со счета</label>
+                    <select name="fromAccountId" required class="form-control">
+                        <option value="">Выберите счет</option>
+                        <option th:each="account : ${accounts}" 
+                                th:value="${account.id}" 
+                                th:text="${account.accountNumber} + ' (' + ${account.accountType} + ') - ' + ${#numbers.formatDecimal(account.balance, 0, 'COMMA', 2, 'POINT')} + ' ' + ${account.currency}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Тип перевода</label>
+                    <select name="transferType" required class="form-control">
+                        <option value="TRANSFER">Между своими счетами</option>
+                        <option value="DEPOSIT">Пополнение</option>
+                        <option value="WITHDRAWAL">Снятие</option>
+                        <option value="EXTERNAL">Внешний перевод</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>На счет (опционально)</label>
+                    <select name="toAccountId" class="form-control">
+                        <option value="">Выберите счет</option>
+                        <option th:each="account : ${accounts}" 
+                                th:value="${account.id}" 
+                                th:text="${account.accountNumber} + ' (' + ${account.accountType} + ')'">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Сумма</label>
+                    <input type="number" name="amount" step="0.01" min="0" required placeholder="0.00" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea name="description" rows="3" placeholder="Назначение платежа" class="form-control"></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1;">Выполнить перевод</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createTransferModal')" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

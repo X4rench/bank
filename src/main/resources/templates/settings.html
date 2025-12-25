@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки - T-BANK</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>T-BANK</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Главная</a>
+                <a href="/dashboard" class="nav-link">Дашборд</a>
+                <a href="/api/accounts/page" class="nav-link">Счета</a>
+                <a href="/api/cards/page" class="nav-link">Карты</a>
+                <a href="/api/transfers/page" class="nav-link">Переводы</a>
+                <a href="/api/payments/page" class="nav-link">Платежи</a>
+                <a href="/api/loans/page" class="nav-link">Кредиты</a>
+                <a href="/api/deposits/page" class="nav-link">Вклады</a>
+                <a href="/api/budgets/page" class="nav-link">Бюджет</a>
+                <a href="/api/analytics/page" class="nav-link">Аналитика</a>
+                <a href="/api/notifications/page" class="nav-link">Уведомления</a>
+            </nav>
+            <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 10px 16px; min-width: auto; margin-top: 12px;">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div class="page-title">
+                <span>Настройки</span>
+            </div>
+
+            <!-- Профиль -->
+            <div class="table-container" style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Профиль</h3>
+                <form id="profileForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Имя</label>
+                            <input type="text" name="firstName" id="firstName" placeholder="Иван" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Фамилия</label>
+                            <input type="text" name="lastName" id="lastName" placeholder="Иванов" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" id="email" placeholder="ivan@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="tel" name="phone" id="phone" placeholder="+7 (999) 123-45-67">
+                    </div>
+                    <button type="submit" class="btn">Сохранить изменения</button>
+                </form>
+            </div>
+
+            <!-- Настройки уведомлений -->
+            <div class="table-container" style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">🔔 Уведомления</h3>
+                <div class="settings-options">
+                    <label class="settings-option">
+                        <div class="settings-option-content">
+                            <span class="settings-option-icon">📧</span>
+                            <div class="settings-option-text">
+                                <span class="settings-option-title">Email уведомления</span>
+                                <span class="settings-option-desc">Получать уведомления на email</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="emailNotifications" checked class="settings-checkbox">
+                        <span class="settings-toggle"></span>
+                    </label>
+                    
+                    <label class="settings-option">
+                        <div class="settings-option-content">
+                            <span class="settings-option-icon">🔔</span>
+                            <div class="settings-option-text">
+                                <span class="settings-option-title">Push уведомления</span>
+                                <span class="settings-option-desc">Получать push-уведомления в браузере</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="pushNotifications" checked class="settings-checkbox">
+                        <span class="settings-toggle"></span>
+                    </label>
+                    
+                    <label class="settings-option">
+                        <div class="settings-option-content">
+                            <span class="settings-option-icon">💳</span>
+                            <div class="settings-option-text">
+                                <span class="settings-option-title">Уведомления о транзакциях</span>
+                                <span class="settings-option-desc">Уведомления о входящих и исходящих транзакциях</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="transactionNotifications" checked class="settings-checkbox">
+                        <span class="settings-toggle"></span>
+                    </label>
+                    
+                    <label class="settings-option">
+                        <div class="settings-option-content">
+                            <span class="settings-option-icon">💸</span>
+                            <div class="settings-option-text">
+                                <span class="settings-option-title">Уведомления о платежах</span>
+                                <span class="settings-option-desc">Уведомления об оплате счетов и платежах</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="paymentNotifications" checked class="settings-checkbox">
+                        <span class="settings-toggle"></span>
+                    </label>
+                    
+                    <label class="settings-option">
+                        <div class="settings-option-content">
+                            <span class="settings-option-icon">🔒</span>
+                            <div class="settings-option-text">
+                                <span class="settings-option-title">Уведомления о безопасности</span>
+                                <span class="settings-option-desc">Важные уведомления о безопасности аккаунта</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="securityNotifications" checked class="settings-checkbox">
+                        <span class="settings-toggle"></span>
+                    </label>
+                </div>
+                <button class="btn" onclick="saveNotificationSettings()" style="margin-top: 20px;">💾 Сохранить настройки</button>
+            </div>
+
+            <!-- История входов -->
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">История входов</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата и время</th>
+                            <th>IP адрес</th>
+                            <th>Устройство</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loginHistoryBody">
+                        <tr>
+                            <td>Сегодня, 14:30</td>
+                            <td>192.168.1.1</td>
+                            <td>Chrome на Windows</td>
+                            <td><span class="badge badge-success">Успешно</span></td>
+                        </tr>
+                        <tr>
+                            <td>Вчера, 09:15</td>
+                            <td>192.168.1.1</td>
+                            <td>Chrome на Windows</td>
+                            <td><span class="badge badge-success">Успешно</span></td>
+                        </tr>
+                        <tr>
+                            <td>2 дня назад, 18:45</td>
+                            <td>192.168.1.1</td>
+                            <td>Mobile Safari</td>
+                            <td><span class="badge badge-warning">Неудачно</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+    <script th:src="@{/js/settings.js}"></script>
+</body>
+</html>
+
